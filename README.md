@@ -21,6 +21,20 @@ AI 在这里用于整理材料、发现遗漏和辅助形成分析框架，不�
 - **AI 辅助：**用户自行配置 DeepSeek API Key 后，可对研究材料进行结构化分析。
 - **数据迁移：**支持本地 JSON 导入、导出与文件夹备份。
 
+## 界面预览
+
+### 投资看板
+
+![投资看板](docs/screenshots/dashboard.png)
+
+### 盘前分析
+
+![盘前分析](docs/screenshots/analysis.png)
+
+### 交易记录
+
+![交易记录](docs/screenshots/trade-form.png)
+
 ## 隐私与密钥
 
 - 交易、持仓、研究档案和笔记默认保存在本机。
@@ -57,4 +71,3 @@ npm run build:win
 ## 许可证
 
 本项目以“源代码可查看”的方式发布，用于作品展示、学习与非商业评估。未经书面许可，不得将代码或构建产物用于商业分发。详见 [LICENSE](LICENSE)。
-
