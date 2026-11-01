@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>附件预览</title>
+<script src="lib/pdf.min.js" async></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  color-scheme: light dark;
+  --sys-bg: #F2F2F7;
+  --sys-bg2: #FFFFFF;
+  --sys-bg3: #EFEFF4;
+  --label: #1C1C1E;
+  --label-2: rgba(60,60,67,0.60);
+  --label-3: rgba(60,60,67,0.30);
+  --separator: rgba(60,60,67,0.12);
+  --blue: #007AFF;
+  --green: #34C759;
+  --red: #FF3B30;
+  --orange: #FF9500;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.04);
+  --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sys-bg: #000000;
+    --sys-bg2: #1C1C1E;
+    --sys-bg3: #2C2C2E;
+    --label: #FFFFFF;
+    --label-2: rgba(235,235,245,0.60);
+    --label-3: rgba(235,235,245,0.30);
+    --separator: rgba(84,84,88,0.6);
+    --blue: #0A84FF;
+    --green: #30D158;
+    --red: #FF453A;
+    --orange: #FF9F0A;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.04);
+    --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.06);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, "SF Pro Display", "SF Pro Text", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  background: var(--sys-bg);
+  color: var(--label);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+  transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+/* ===== Title Bar (draggable) ===== */
+.title-bar {
+  -webkit-app-region: drag;
+  padding: 0 16px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid var(--separator);
+  background: var(--sys-bg2);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.title-bar .title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+.title-bar .traffic-spacer {
+  width: 62px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+/* Windows titlebar controls */
+.win-tb-controls {
+  display: none;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  margin-left: auto;
+  order: 3;
+}
+body.platform-win .traffic-spacer { display: none; }
+body.platform-win .win-tb-controls { display: flex; }
+.win-tb-controls .win-tb-btn {
+  width: 46px;
+  height: 42px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--label);
+  transition: background 0.15s;
+}
+.win-tb-controls .win-tb-btn:hover {
+  background: rgba(0,0,0,0.08);
+}
+.win-tb-controls .win-tb-btn:active {
+  background: rgba(0,0,0,0.12);
+}
+.win-tb-controls .win-tb-btn.close:hover {
+  background: #e81123;
+  color: #fff;
+}
+.win-tb-controls .win-tb-btn.close:active {
+  background: #f1707a;
+  color: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  .win-tb-controls .win-tb-btn:hover {
+    background: rgba(255,255,255,0.08);
+  }
+  .win-tb-controls .win-tb-btn:active {
+    background: rgba(255,255,255,0.12);
+  }
+}
+.title-bar .toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  background: var(--sys-bg3);
+  border-radius: 8px;
+  padding: 3px;
+}
+.title-bar .toolbar button {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--label-2);
+  transition: all 0.15s var(--ease);
+}
+.title-bar .toolbar button:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--label);
+}
+@media (prefers-color-scheme: dark) {
+  .title-bar .toolbar button:hover {
+    background: rgba(255,255,255,0.08);
+  }
+}
+.title-bar .toolbar button:active {
+  transform: scale(0.94);
+}
+.title-bar .toolbar button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.title-bar .toolbar .zoom-display {
+  font-size: 11px;
+  color: var(--label-2);
+  min-width: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.title-bar .toolbar .page-count {
+  font-size: 11px;
+  color: var(--label-2);
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.title-bar .toolbar .toolbar-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--separator);
+  margin: 0 4px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ===== Content Area ===== */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+/* Center content when it's narrower than viewport, but allow scrolling when wider */
+.content > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* PDF page wrappers for continuous scroll */
+.pdf-page-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+.pdf-page-wrapper canvas {
+  display: block;
+  max-width: none;
+  box-shadow: var(--card-shadow);
+  border-radius: var(--r-md);
+  background: white;
+}
+.pdf-page-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--sys-bg2);
+  border-radius: var(--r-md);
+  box-shadow: var(--card-shadow);
+  color: var(--label-3);
+  font-size: 13px;
+}
+.pdf-page-placeholder .mini-spinner {
+  width: 20px; height: 20px;
+  margin-right: 8px;
+}
+
+.content img.preview-image {
+  max-width: none;
+  height: auto;
+  border-radius: var(--r-lg);
+  box-shadow: var(--card-shadow);
+  display: block;
+  image-rendering: -webkit-optimize-contrast;
+}
+.content .preview-text {
+  width: 100%;
+  max-width: 800px;
+  padding: 20px 24px;
+  background: var(--sys-bg2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--card-shadow);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  color: var(--label);
+  font-family: -apple-system, "SF Mono", Menlo, monospace;
+  font-size: 14px;
+}
+/* Shared center-state layout for loading/error/unsupported */
+.center-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--label-2);
+}
+.content .preview-unsupported {
+  gap: 16px;
+  padding: 40px;
+  background: var(--sys-bg2);
+  border-radius: var(--r-xl);
+  box-shadow: var(--card-shadow);
+  max-width: 360px;
+  text-align: center;
+}
+.content .preview-unsupported svg {
+  width: 56px;
+  height: 56px;
+  stroke: var(--label-3);
+  fill: none;
+  stroke-width: 1.2;
+}
+.content .preview-unsupported .unsupported-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--label);
+  margin-bottom: -8px;
+}
+.content .preview-unsupported .unsupported-desc {
+  font-size: 13px;
+  color: var(--label-2);
+  line-height: 1.5;
+}
+.content .preview-loading {
+  gap: 14px;
+  font-size: 14px;
+  color: var(--label-2);
+}
+/* Shared spinner base style */
+.spinner, .mini-spinner {
+  border: 2px solid var(--separator);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.content .preview-loading .spinner {
+  width: 32px; height: 32px;
+  border-width: 3px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Buttons */
+.btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  border: none;
+}
+.btn:active { transform: scale(0.96); opacity: 0.85; }
+.btn-secondary {
+  background: var(--sys-bg3);
+  color: var(--label);
+  border: 0.5px solid var(--separator);
+}
+.btn-secondary:hover { 
+  filter: brightness(0.96);
+}
+@media (prefers-color-scheme: dark) {
+  .btn-secondary:hover {
+    filter: brightness(1.15);
+  }
+}
+
+.btn-download {
+  margin-top: 4px;
+  padding: 7px 18px;
+  border-radius: var(--r-sm);
+  background: var(--sys-bg3);
+  color: var(--label);
+  border: 0.5px solid var(--separator);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-download:hover {
+  filter: brightness(0.96);
+}
+@media (prefers-color-scheme: dark) {
+  .btn-download:hover {
+    filter: brightness(1.15);
+  }
+}
+.btn-download:active {
+  transform: scale(0.96);
+}
+
+/* Scrollbar styling */
+.content::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.content::-webkit-scrollbar-thumb {
+  background: var(--label-3);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.content::-webkit-scrollbar-thumb:hover {
+  background: var(--label-2);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+</style>
+</head>
+<body>
+  <div class="title-bar">
+    <div class="traffic-spacer"></div>
+    <span class="title" id="title">附件预览</span>
+    <div class="toolbar" id="toolbar"></div>
+    <div class="win-tb-controls" id="win-tb-controls">
+      <button class="win-tb-btn" id="win-tb-min" title="最小化">
+        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+      </button>
+      <button class="win-tb-btn" id="win-tb-max" title="最大化/还原">
+        <svg class="win-tb-max-icon" width="10" height="10" viewBox="0 0 10 10"><path d="M0.5 0.5h9v9h-9z" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        <svg class="win-tb-restore-icon" width="10" height="10" viewBox="0 0 10 10" style="display:none"><path d="M2 0.5h5.5v5.5M0.5 2v7.5h7.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+      </button>
+      <button class="win-tb-btn close" id="win-tb-close" title="关闭">
+        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="content" id="content">
+    <div class="center-state preview-loading">
+      <div class="spinner"></div>
+      <div>等待加载...</div>
+    </div>
+  </div>
+
+<script>
+// =============================================
+//  STATE
+// =============================================
+let _pdfDoc = null;
+let _totalPages = 0;
+let _zoom = 1.0;
+let _previewType = '';
+let _attachmentData = null;
+let _imageNaturalWidth = 0; // store image natural width for width-based zoom
+
+// Multi-attachment navigation state
+let _allAttachments = [];
+let _currentIndex = 0;
+
+// PDF continuous scroll state
+let _pdfPageInfo = [];      // [{ width, height }] at scale 1 for each page
+let _pdfPages = [];          // [{ pageNum, rendered, wrapper, canvas }]
+let _pdfObserver = null;     // IntersectionObserver for lazy loading
+let _renderingPages = new Set(); // pages currently being rendered
+let _zoomDebounce = null;
+
+// =============================================
+//  IndexedDB (fallback for web mode; in Electron data comes via IPC)
+// =============================================
+const ATTACHMENT_DB_NAME = 'value_invest_attachments';
+const ATTACHMENT_STORE = 'files';
+let _db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (_db) {
+      // Sanity check the cached connection
+      try {
+        const testTx = _db.transaction(ATTACHMENT_STORE, 'readonly');
+        testTx.oncomplete = () => resolve(_db);
+        testTx.onerror = () => {
+          console.warn('Cached IndexedDB connection stale, reconnecting...');
+          _db = null;
+          doOpen();
+        };
+        return;
+      } catch(e) {
+        console.warn('Cached IndexedDB sanity check failed:', e.message);
+        _db = null;
+      }
+    }
+    doOpen();
+
+    function doOpen() {
+      const request = indexedDB.open(ATTACHMENT_DB_NAME, 1);
+      request.onupgradeneeded = function(e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(ATTACHMENT_STORE)) {
+          db.createObjectStore(ATTACHMENT_STORE, { keyPath: 'key' });
+        }
+      };
+      request.onsuccess = function(e) {
+        _db = e.target.result;
+        _db.onclose = () => {
+          console.warn('IndexedDB connection closed');
+          _db = null;
+        };
+        resolve(_db);
+      };
+      request.onerror = function(e) {
+        console.error('IndexedDB open error:', e.target.error);
+        reject(e.target.error);
+      };
+      request.onblocked = function() {
+        reject(new Error('数据库被占用'));
+      };
+    }
+  });
+}
+
+async function idbGet(key) {
+  if (!key) return null;
+  
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const db = await openDB();
+      const result = await new Promise((resolve, reject) => {
+        const tx = db.transaction(ATTACHMENT_STORE, 'readonly');
+        const req = tx.objectStore(ATTACHMENT_STORE).get(key);
+        req.onsuccess = () => resolve(req.result ? req.result.data : null);
+        req.onerror = () => reject(req.error);
+        tx.onabort = () => reject(new Error('Transaction aborted'));
+      });
+      return result !== undefined ? result : null;
+    } catch(e) {
+      console.error(`idbGet attempt ${attempt + 1} failed:`, e.message);
+      if (attempt === 0) {
+        _db = null;
+        await new Promise(r => setTimeout(r, 200));
+      } else {
+        throw e;
+      }
+    }
+  }
+  return null;
+}
+
+// =============================================
+//  PDF.JS SETUP
+// =============================================
+let _pdfWorkerReady = false;
+
+async function ensurePdfWorker() {
+  if (_pdfWorkerReady) return true;
+
+  const maxWait = 15000;
+  const startTime = Date.now();
+  while (typeof pdfjsLib === 'undefined' && Date.now() - startTime < maxWait) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  if (typeof pdfjsLib === 'undefined') {
+    console.error('pdf.js library failed to load');
+    return false;
+  }
+
+  const workerSources = [
+    'lib/pdf.worker.min.js',
+    'https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+  ];
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSources[0];
+  _pdfWorkerReady = true;
+  return true;
+}
+
+// =============================================
+//  RENDER FUNCTIONS
+// =============================================
+
+async function renderContent(data) {
+  const { name, type, category, idbKey, dataUrl } = data;
+  _attachmentData = data;
+
+  // Update title with index if multiple attachments
+  const titleEl = document.getElementById('title');
+  if (_allAttachments.length > 1) {
+    titleEl.textContent = `${name || '附件预览'} (${_currentIndex + 1}/${_allAttachments.length})`;
+  } else {
+    titleEl.textContent = name || '附件预览';
+  }
+
+  // Clean up previous PDF
+  cleanupPdf();
+
+  let url = dataUrl;
+  if (!url && idbKey) {
+    showLoading('正在读取附件数据...');
+    try {
+      url = await idbGet(idbKey);
+    } catch (e) {
+      console.error('IndexedDB read error:', e);
+      showError('附件数据读取失败');
+      return;
+    }
+  }
+  if (!url) {
+    console.warn('No attachment data to display — idbKey:', idbKey, 'hasDataUrl:', !!dataUrl);
+    if (idbKey) {
+      showError('附件数据为空或已丢失，请在主窗口重新上传');
+    } else {
+      showError('附件数据不可用');
+    }
+    return;
+  }
+
+  let cat = category;
+  if (!cat) {
+    if (type === 'application/pdf' || (name && name.toLowerCase().endsWith('.pdf'))) cat = 'pdf';
+    else if (type && type.startsWith('image/')) cat = 'image';
+    else if (type === 'text/plain' || type === 'text/csv' ||
+             (name && (name.toLowerCase().endsWith('.txt') || name.toLowerCase().endsWith('.csv')))) cat = 'text';
+    else cat = 'unsupported';
+  }
+
+  _previewType = cat;
+  _zoom = 1.0;
+  _imageNaturalWidth = 0;
+
+  try {
+    if (cat === 'pdf') {
+      await renderPdf(url);
+    } else if (cat === 'image') {
+      renderImage(url);
+    } else if (cat === 'text') {
+      await renderText(url);
+    } else {
+      renderUnsupported(name, url);
+    }
+  } catch (err) {
+    console.error('Render error:', err);
+    showError('渲染失败：' + (err.message || '未知错误'));
+  }
+}
+
+function cleanupPdf() {
+  if (_pdfObserver) {
+    _pdfObserver.disconnect();
+    _pdfObserver = null;
+  }
+  if (_pdfDoc) {
+    _pdfDoc.destroy();
+    _pdfDoc = null;
+  }
+  _pdfPages = [];
+  _pdfPageInfo = [];
+  _renderingPages.clear();
+  _pdfWorkerReady = false;
+}
+
+// =============================================
+//  PDF — Continuous Scroll Rendering
+// =============================================
+
+async function renderPdf(dataUrl) {
+  const ready = await ensurePdfWorker();
+  if (!ready) {
+    showError('PDF 渲染库加载失败');
+    return;
+  }
+
+  showLoading('正在加载 PDF...');
+
+  const loadingTask = pdfjsLib.getDocument({ url: dataUrl });
+  _pdfDoc = await loadingTask.promise;
+  _totalPages = _pdfDoc.numPages;
+
+  // Load all page dimensions in parallel (fast — just metadata)
+  showLoading('正在读取页面信息...');
+  const pagePromises = [];
+  for (let i = 1; i <= _totalPages; i++) {
+    pagePromises.push(
+      _pdfDoc.getPage(i).then(page => {
+        const vp = page.getViewport({ scale: 1 });
+        return { width: vp.width, height: vp.height };
+      })
+    );
+  }
+  _pdfPageInfo = await Promise.all(pagePromises);
+
+  // Auto-fit zoom
+  autoFitPdfZoom();
+
+  // Build toolbar (zoom only, no page navigation)
+  buildToolbar('pdf');
+
+  // Create scrollable page wrappers
+  const container = document.getElementById('content');
+  container.innerHTML = '';
+  _pdfPages = [];
+
+  const containerWidth = container.clientWidth - 32 || 520;
+
+  for (let i = 0; i < _totalPages; i++) {
+    const info = _pdfPageInfo[i];
+    const baseScale = Math.min(containerWidth / info.width, 1.5);
+    const scale = baseScale * _zoom;
+    const displayWidth = info.width * scale;
+    const displayHeight = info.height * scale;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pdf-page-wrapper';
+    wrapper.dataset.pageNum = i + 1;
+    wrapper.style.width = displayWidth + 'px';
+    wrapper.style.height = displayHeight + 'px';
+
+    const placeholder = document.createElement('div');
+    placeholder.className = 'pdf-page-placeholder';
+    placeholder.innerHTML = '<div class="mini-spinner"></div>第 ' + (i + 1) + ' 页';
+    wrapper.appendChild(placeholder);
+
+    container.appendChild(wrapper);
+
+    _pdfPages.push({
+      pageNum: i + 1,
+      rendered: false,
+      wrapper: wrapper,
+      canvas: null
+    });
+  }
+
+  // Set up IntersectionObserver for lazy loading
+  _pdfObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const pageNum = parseInt(entry.target.dataset.pageNum);
+        renderPdfPageLazy(pageNum);
+      }
+    });
+  }, {
+    root: container,
+    rootMargin: '600px 0px'
+  });
+
+  _pdfPages.forEach(p => _pdfObserver.observe(p.wrapper));
+}
+
+function autoFitPdfZoom() {
+  if (!_pdfPageInfo.length) return;
+  const info = _pdfPageInfo[0];
+  const containerWidth = document.getElementById('content').clientWidth - 32 || 520;
+  const fitScale = containerWidth / info.width;
+  // If fitScale > 1.5, zoom out so page fits at baseScale=1.5 (zoom < 1)
+  // Otherwise zoom = 1.0 (page fits within 1.5x limit)
+  _zoom = fitScale > 1.5 ? fitScale / 1.5 : 1.0;
+  _zoom = clampZoom(_zoom);
+}
+
+async function renderPdfPageLazy(pageNum) {
+  const pageData = _pdfPages[pageNum - 1];
+  if (!pageData || pageData.rendered || _renderingPages.has(pageNum)) return;
+
+  _renderingPages.add(pageNum);
+
+  try {
+    const page = await _pdfDoc.getPage(pageNum);
+    const container = document.getElementById('content');
+    const containerWidth = container.clientWidth - 32 || 520;
+    const info = _pdfPageInfo[pageNum - 1];
+    const baseScale = Math.min(containerWidth / info.width, 1.5);
+    const scale = baseScale * _zoom;
+    const viewport = page.getViewport({ scale: scale });
+
+    // High-DPI rendering
+    const dpr = window.devicePixelRatio || 1;
+    const renderScale = Math.max(dpr, 2);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    canvas.width = Math.floor(viewport.width * renderScale);
+    canvas.height = Math.floor(viewport.height * renderScale);
+    canvas.style.width = viewport.width + 'px';
+    canvas.style.height = viewport.height + 'px';
+
+    const renderViewport = page.getViewport({ scale: scale * renderScale });
+
+    // Replace placeholder with canvas
+    pageData.wrapper.innerHTML = '';
+    pageData.wrapper.appendChild(canvas);
+    pageData.canvas = canvas;
+
+    // Update wrapper dimensions (in case they changed)
+    pageData.wrapper.style.width = viewport.width + 'px';
+    pageData.wrapper.style.height = viewport.height + 'px';
+
+    await page.render({
+      canvasContext: ctx,
+      viewport: renderViewport
+    }).promise;
+
+    pageData.rendered = true;
+  } catch (err) {
+    console.error('Page render error:', pageNum, err);
+    // Show error in placeholder
+    if (pageData.wrapper) {
+      pageData.wrapper.innerHTML = '<div class="pdf-page-placeholder">第 ' + pageNum + ' 页渲染失败</div>';
+    }
+  } finally {
+    _renderingPages.delete(pageNum);
+  }
+}
+
+async function rerenderPdfPages() {
+  if (!_pdfDoc || !_pdfPages.length) return;
+
+  const container = document.getElementById('content');
+  const containerWidth = container.clientWidth - 32 || 520;
+  const scrollTop = container.scrollTop;
+  const viewportHeight = container.clientHeight;
+
+  // Mark all pages as unrendered and update dimensions
+  for (let i = 0; i < _pdfPages.length; i++) {
+    const p = _pdfPages[i];
+    const info = _pdfPageInfo[i];
+    const baseScale = Math.min(containerWidth / info.width, 1.5);
+    const scale = baseScale * _zoom;
+    const displayWidth = info.width * scale;
+    const displayHeight = info.height * scale;
+
+    p.rendered = false;
+    p.canvas = null;
+    p.wrapper.style.width = displayWidth + 'px';
+    p.wrapper.style.height = displayHeight + 'px';
+    p.wrapper.innerHTML = '<div class="pdf-page-placeholder"><div class="mini-spinner"></div>第 ' + p.pageNum + ' 页</div>';
+  }
+
+  // Restore scroll position
+  container.scrollTop = scrollTop;
+
+  // Re-render visible pages
+  for (let i = 0; i < _pdfPages.length; i++) {
+    const p = _pdfPages[i];
+    const rect = p.wrapper.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const top = rect.top - containerRect.top;
+    const bottom = rect.bottom - containerRect.top;
+
+    if (bottom > -600 && top < viewportHeight + 600) {
+      renderPdfPageLazy(p.pageNum);
+    }
+  }
+}
+
+// =============================================
+//  IMAGE / TEXT RENDERING
+// =============================================
+
+function renderImage(dataUrl) {
+  _previewType = 'image';
+  buildToolbar('image');
+
+  const container = document.getElementById('content');
+  container.innerHTML = '';
+
+  const img = document.createElement('img');
+  img.className = 'preview-image';
+  img.id = 'preview-image-el';
+  img.src = dataUrl;
+  img.alt = '预览图片';
+  img.onload = () => {
+    _imageNaturalWidth = img.naturalWidth;
+    applyZoom();
+  };
+  container.appendChild(img);
+}
+
+async function renderText(dataUrl) {
+  _previewType = 'text';
+  buildToolbar('text');
+
+  const container = document.getElementById('content');
+  try {
+    const response = await fetch(dataUrl);
+    const text = await response.text();
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    container.innerHTML = `<div class="preview-text" id="preview-text-el" style="font-size:${(14 * _zoom).toFixed(0)}px">${escaped}</div>`;
+  } catch (e) {
+    container.innerHTML = '<div class="center-state preview-unsupported"><div>文本内容加载失败</div></div>';
+  }
+}
+
+function renderUnsupported(name, dataUrl) {
+  _previewType = 'unsupported';
+  buildToolbar('unsupported');
+
+  const container = document.getElementById('content');
+  container.innerHTML = `<div class="center-state preview-unsupported">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+    <div class="unsupported-title">此格式不支持在线预览</div>
+    <div class="unsupported-desc">${name || '未知文件'}</div>
+    <button class="btn-download" id="download-btn">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      下载文件查看
+    </button>
+  </div>`;
+
+  const dlBtn = document.getElementById('download-btn');
+  if (dlBtn) {
+    dlBtn.addEventListener('click', () => downloadFile(dataUrl, name));
+  }
+}
+
+function downloadFile(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename || 'attachment';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// =============================================
+//  TOOLBAR
+// =============================================
+
+function buildToolbar(type) {
+  const toolbar = document.getElementById('toolbar');
+  const hasMultiple = _allAttachments.length > 1;
+
+  // Navigation buttons (prev/next) for multiple attachments
+  let navHtml = '';
+  if (hasMultiple) {
+    navHtml = `
+      <button id="prev-att-btn" title="上一个附件" ${_currentIndex === 0 ? 'disabled' : ''}>
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span style="font-size:12px;color:var(--label-2);min-width:42px;text-align:center">${_currentIndex + 1}/${_allAttachments.length}</span>
+      <button id="next-att-btn" title="下一个附件" ${_currentIndex === _allAttachments.length - 1 ? 'disabled' : ''}>
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div class="toolbar-sep"></div>
+    `;
+  }
+
+  // Zoom controls shared by pdf, image, and text
+  const zoomHtml = `
+    <button id="zoom-out-btn" title="缩小">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-4.35-4.35"/></svg>
+    </button>
+    <span class="zoom-display" id="zoom-display">${Math.round(_zoom * 100)}%</span>
+    <button id="zoom-in-btn" title="放大">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M21 21l-4.35-4.35"/></svg>
+    </button>
+  `;
+
+  if (type === 'pdf') {
+    toolbar.innerHTML = `
+      ${navHtml}
+      <span class="page-count">${_totalPages} 页</span>
+      <div class="toolbar-sep"></div>
+      ${zoomHtml}
+    `;
+  } else if (type === 'image' || type === 'text') {
+    toolbar.innerHTML = `
+      ${navHtml}
+      ${zoomHtml}
+    `;
+  } else {
+    toolbar.innerHTML = navHtml;
+  }
+
+  // Bind zoom controls
+  if (type === 'pdf' || type === 'image' || type === 'text') {
+    document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
+    document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+  }
+
+  // Bind navigation buttons
+  if (hasMultiple) {
+    const prevBtn = document.getElementById('prev-att-btn');
+    const nextBtn = document.getElementById('next-att-btn');
+    if (prevBtn) prevBtn.addEventListener('click', prevAttachment);
+    if (nextBtn) nextBtn.addEventListener('click', nextAttachment);
+  }
+}
+
+// =============================================
+//  ATTACHMENT NAVIGATION
+// =============================================
+
+async function goToAttachment(index) {
+  if (index < 0 || index >= _allAttachments.length) return;
+  const att = _allAttachments[index];
+  if (!att) return;
+  _currentIndex = index;
+  cleanupPdf();
+  _zoom = 1.0;
+  _imageNaturalWidth = 0;
+  await renderContent(att);
+}
+
+async function prevAttachment() {
+  await goToAttachment(_currentIndex - 1);
+}
+
+async function nextAttachment() {
+  await goToAttachment(_currentIndex + 1);
+}
+
+// =============================================
+//  ZOOM
+// =============================================
+
+function zoomIn() {
+  _zoom = clampZoom(_zoom + 0.25);
+  applyZoom();
+}
+
+function zoomOut() {
+  _zoom = clampZoom(_zoom - 0.25);
+  applyZoom();
+}
+
+function clampZoom(val) {
+  return Math.max(0.5, Math.min(4.0, val));
+}
+
+function resetZoom() {
+  _zoom = 1.0;
+  applyZoom();
+}
+
+function applyZoom() {
+  const display = document.getElementById('zoom-display');
+  if (display) display.textContent = Math.round(_zoom * 100) + '%';
+
+  if (_previewType === 'pdf') {
+    // Debounce re-rendering for smooth trackpad zoom
+    clearTimeout(_zoomDebounce);
+    _zoomDebounce = setTimeout(() => {
+      rerenderPdfPages();
+    }, 150);
+  } else if (_previewType === 'image') {
+    const img = document.getElementById('preview-image-el');
+    if (img && _imageNaturalWidth > 0) {
+      img.style.width = (_imageNaturalWidth * _zoom) + 'px';
+    }
+  } else if (_previewType === 'text') {
+    const textEl = document.getElementById('preview-text-el');
+    if (textEl) textEl.style.fontSize = (14 * _zoom).toFixed(0) + 'px';
+  }
+}
+
+// =============================================
+//  HELPERS
+// =============================================
+
+function showLoading(msg) {
+  document.getElementById('content').innerHTML = `
+    <div class="center-state preview-loading">
+      <div class="spinner"></div>
+      <div>${msg || '加载中...'}</div>
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById('content').innerHTML = `
+    <div class="center-state preview-unsupported">
+      <svg viewBox="0 0 24 24" style="stroke: var(--orange);"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div class="unsupported-title">${msg || '加载失败'}</div>
+      <div class="unsupported-desc">请检查附件是否完整，或尝试重新上传</div>
+    </div>`;
+}
+
+// =============================================
+//  IPC — receive data from main app
+// =============================================
+
+// Windows platform adaptation
+(function() {
+  const isWindows = (window.electronAPI && electronAPI.platform === 'win32') ||
+                    (navigator.platform && navigator.platform.indexOf('Win') >= 0);
+  if (isWindows) {
+    document.body.classList.add('platform-win');
+    const minBtn = document.getElementById('win-tb-min');
+    const maxBtn = document.getElementById('win-tb-max');
+    const closeBtn = document.getElementById('win-tb-close');
+    const maxIcon = document.querySelector('.win-tb-max-icon');
+    const restoreIcon = document.querySelector('.win-tb-restore-icon');
+    if (minBtn && window.electronAPI && electronAPI.minimizePreview) {
+      minBtn.addEventListener('click', () => electronAPI.minimizePreview());
+    }
+    if (maxBtn && window.electronAPI && electronAPI.maximizePreview) {
+      maxBtn.addEventListener('click', async () => {
+        await electronAPI.maximizePreview();
+      });
+    }
+    if (closeBtn && window.electronAPI && electronAPI.closePreview) {
+      closeBtn.addEventListener('click', () => electronAPI.closePreview());
+    }
+  }
+})();
+
+if (window.electronAPI && electronAPI.onPreviewData) {
+  electronAPI.onPreviewData((data) => {
+    cleanupPdf();
+
+    // Handle both formats:
+    // 1. { attachments: [...], index: number }  (array with index)
+    // 2. { name, type, dataUrl, idbKey }      (single attachment)
+    if (data && Array.isArray(data.attachments)) {
+      _allAttachments = data.attachments;
+      _currentIndex = data.index || 0;
+      const att = _allAttachments[_currentIndex];
+      if (att) {
+        renderContent(att);
+      } else {
+        showError('附件索引无效');
+      }
+    } else {
+      _allAttachments = data ? [data] : [];
+      _currentIndex = 0;
+      renderContent(data);
+    }
+  });
+}
+
+// Close window function (called by Escape key and close button)
+function closePreviewWindow() {
+  if (window.electronAPI && electronAPI.closePreview) {
+    electronAPI.closePreview();
+  } else {
+    // Web fallback: try to close the window
+    window.close();
+  }
+}
+
+// Click anywhere on the preview window to bring it to the front (z-order by click)
+// This ensures the preview window rises above the main window when interacted with
+document.addEventListener('mousedown', () => {
+  if (window.electronAPI && electronAPI.focusPreviewWindow) {
+    electronAPI.focusPreviewWindow();
+  }
+}, { once: false, capture: true });
+
+// =============================================
+//  KEYBOARD SHORTCUTS
+// =============================================
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closePreviewWindow();
+  } else if ((e.metaKey || e.ctrlKey) && e.key === '=') {
+    e.preventDefault();
+    zoomIn();
+  } else if ((e.metaKey || e.ctrlKey) && e.key === '-') {
+    e.preventDefault();
+    zoomOut();
+  } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+    e.preventDefault();
+    resetZoom();
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    prevAttachment();
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    nextAttachment();
+  }
+});
+
+// =============================================
+//  TRACKPAD PINCH-TO-ZOOM (Mac gesture)
+//  In Chromium, trackpad pinch produces wheel events with ctrlKey=true
+// =============================================
+
+document.addEventListener('wheel', (e) => {
+  if (e.ctrlKey && _previewType) {
+    e.preventDefault();
+    const delta = -e.deltaY * 0.01;
+    _zoom = clampZoom(_zoom + delta);
+    applyZoom();
+  }
+}, { passive: false });
+
+// =============================================
+//  WINDOW RESIZE — re-render visible PDF pages
+// =============================================
+
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  if (_previewType !== 'pdf') return;
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    rerenderPdfPages();
+  }, 300);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+  "name": "价值投资助手",
+  "short_name": "投资助手",
+  "description": "本地交易记录与分析系统，价值投资的得力助手",
+  "start_url": "./stock-tracker.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1C1C1E",
+  "theme_color": "#1C1C1E",
+  "lang": "zh-CN",
+  "scope": "./",
+  "categories": ["finance", "productivity", "business"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新建心得",
+      "short_name": "新心得",
+      "description": "快速撰写一篇投资心得",
+      "url": "./stock-tracker.html?action=new-note",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "添加交易",
+      "short_name": "记交易",
+      "description": "快速记录一笔交易",
+      "url": "./stock-tracker.html?action=new-trade",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icons/screenshot.png",
+      "sizes": "1280x840",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "主界面"
+    }
+  ]
+}

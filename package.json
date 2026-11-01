@@ -1,0 +1,86 @@
+{
+  "name": "value-invest-assistant",
+  "version": "1.0.0",
+  "description": "价值投资助手 - 本地交易记录与分析系统",
+  "author": "ValueInvest",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js",
+    "build:asar": "node scripts/build-app-asar.js",
+    "build:mac": "electron-builder --mac --arm64",
+    "build:win": "electron-builder --win --x64",
+    "build:all": "electron-builder --mac --arm64 && electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.valueinvest.assistant",
+    "productName": "价值投资助手",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "stock-tracker.html",
+      "preview.html",
+      "manifest.json",
+      "sw.js",
+      "lib/**/*",
+      "assets/**/*",
+      "icons/**/*"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64"]
+        }
+      ],
+      "category": "public.app-category.finance",
+      "icon": "assets/icon.icns",
+      "darkModeSupport": true,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "signIgnore": [
+        "^.+\\.map$",
+        "^.+\\.md$"
+      ]
+    },
+    "dmg": {
+      "title": "价值投资助手 安装程序",
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "价值投资助手",
+      "deleteAppDataOnUninstall": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
