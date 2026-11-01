@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1C1C1E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2C2C2E;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="chartGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#34C759;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#30D158;stop-opacity:0.6" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  
+  <!-- Chart area -->
+  <g transform="translate(96, 120)">
+    <!-- Chart grid lines -->
+    <line x1="0" y1="200" x2="320" y2="200" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <line x1="0" y1="150" x2="320" y2="150" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="0" y1="100" x2="320" y2="100" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="0" y1="50" x2="320" y2="50" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    
+    <!-- Area fill under chart -->
+    <path d="M0,180 L60,160 L120,170 L180,120 L240,100 L320,50 L320,200 L0,200 Z" 
+          fill="url(#chartGrad)"/>
+    
+    <!-- Chart line -->
+    <path d="M0,180 L60,160 L120,170 L180,120 L240,100 L320,50" 
+          fill="none" 
+          stroke="#34C759" 
+          stroke-width="5" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"/>
+    
+    <!-- Data points -->
+    <circle cx="60" cy="160" r="8" fill="#34C759"/>
+    <circle cx="120" cy="170" r="8" fill="#34C759"/>
+    <circle cx="180" cy="120" r="8" fill="#34C759"/>
+    <circle cx="240" cy="100" r="8" fill="#34C759"/>
+    <circle cx="320" cy="50" r="10" fill="#30D158" stroke="#1C1C1E" stroke-width="4"/>
+  </g>
+  
+  <!-- App name text -->
+  <text x="256" y="400" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="48" font-weight="700" fill="white" letter-spacing="2">价值</text>
+  <text x="256" y="450" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="500" fill="rgba(255,255,255,0.6)" letter-spacing="6">INVEST</text>
+</svg>
